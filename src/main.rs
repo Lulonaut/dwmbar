@@ -10,7 +10,7 @@ use std::process::{exit, Command, Output};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use x11::xlib::{XDefaultRootWindow, XFlush, XOpenDisplay, XStoreName};
 
 #[serde_with::skip_serializing_none]
@@ -103,7 +103,14 @@ fn main() -> Result<(), anyhow::Error> {
     for command in collected_commands.clone() {
         let tx = tx.clone();
         thread::spawn(move || {
-            run_command(command.command.as_str());
+            let output = run_command(command.command.as_str());
+
+            command.output.write().unwrap().clear();
+            command
+                .output
+                .write()
+                .unwrap()
+                .push_str(&String::from_utf8(output.stdout).unwrap());
             tx.send(command).unwrap();
         });
     }
@@ -126,6 +133,11 @@ fn main() -> Result<(), anyhow::Error> {
                 let sleep_delay = Duration::from_millis(
                     command.update_delay.unwrap_or(config.default_update_delay),
                 );
+
+                // No updates
+                if sleep_delay.is_zero() {
+                    return;
+                }
                 thread::sleep(sleep_delay);
 
                 let output = run_command(command.command.as_str());

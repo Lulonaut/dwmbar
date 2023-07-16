@@ -141,7 +141,10 @@ fn main() -> Result<(), anyhow::Error> {
                 thread::sleep(sleep_delay);
 
                 let output = run_command(command.command.as_str());
-                if !output.status.success() {
+                if !output.status.success()
+                    && command.ignore_status_code.is_some()
+                    && !command.ignore_status_code.unwrap()
+                {
                     eprintln!("Command {} was not successful!", command.command);
                     tx.send(command).unwrap();
                     return;

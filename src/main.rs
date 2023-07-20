@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use std::process::{exit, Command, Output};
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex, RwLock};
-use std::thread;
 use std::time::Duration;
+use std::{env, thread};
 use x11::xlib::{XDefaultRootWindow, XFlush, XOpenDisplay, XStoreName};
 
 #[serde_with::skip_serializing_none]
@@ -74,10 +74,21 @@ fn run_command(command: &str) -> Output {
 }
 
 fn read_config() -> Result<Config, anyhow::Error> {
-    let file = PathBuf::from("config.json");
-    if !file.exists() {
-        print!("Config file does not exist yet, creating...");
-        let mut file = File::create(file)?;
+    let dir = PathBuf::from(env::var("XDG_CONFIG_HOME").unwrap_or(format!(
+        "{}/.config",
+        env::var("HOME").expect("$HOME not set!")
+    )))
+    .join("dwmbar");
+    std::fs::create_dir_all(&dir).expect("Failed to create config dir");
+
+    let file = dir.join("config.json");
+
+    if !&file.exists() {
+        print!(
+            "Config file does not exist yet, creating at {}...",
+            file.to_str().unwrap()
+        );
+        let mut file = File::create(&file)?;
 
         // Write the default config
         file.write_all(
@@ -88,7 +99,7 @@ fn read_config() -> Result<Config, anyhow::Error> {
         println!("OK");
     }
 
-    let contents = std::fs::read_to_string("config.json")?;
+    let contents = std::fs::read_to_string(file)?;
     let config = serde_json::from_str(&contents)?;
     Ok(config)
 }

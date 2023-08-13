@@ -1,7 +1,5 @@
-#![feature(default_free_fn)]
-
 use serde::{Deserialize, Serialize};
-use std::default::default;
+use std::default::Default;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::Write;
@@ -53,12 +51,12 @@ impl Default for Config {
             commands: vec![
                 ActiveCommand {
                     command: "date".to_string(),
-                    ..default()
+                    ..Default::default()
                 },
                 ActiveCommand {
                     command: "echo \"The bar is working\"".to_string(),
                     update_delay: Some(0),
-                    ..default()
+                    ..Default::default()
                 },
             ],
         }
